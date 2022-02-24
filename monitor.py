@@ -1,3 +1,4 @@
+import os
 import logging
 import requests
 
@@ -5,16 +6,25 @@ from tinydb import TinyDB, Query
 from html.parser import HTMLParser
 
 class Crawler(HTMLParser):
-    def __init__(self, url, key='', keys=[]):
+    def __init__(self, url, key='', keys=[], work_dir="/root"):
+        """
+        Args:
+            url (str): The URL to crawl.
+            key (str): ...
+            keys (array): String of arrays to search for in the target URL.
+            work_dir (str): Path to a directory to store data of any kind.
+        """
         super(Crawler, self).__init__()
         self.results = {}
 
         self.url = url
         self.key = key
         self.keys = keys
-        
+
+        self.work_dir = work_dir
+       
         # Initlize tiny db
-        self.tinydb_path = '/root/bland.json'
+        self.tinydb_path = os.path.join(self.work_dir, 'db.json')
 
     def monitor_set_id(self, _id, data):
         """ Store the data associated with the id in json a file
@@ -32,14 +42,14 @@ class Crawler(HTMLParser):
 
     def start(self):
         # Get the content and close the connection.
-        #res = requests.get(self.url)
-        #content = res.content.decode('utf-8')
-        #res.close()
-        content = None
-        with open('/root/fb.html', 'r') as f:
-            content = f.read()
+        res = requests.get(self.url)
+        content = res.content.decode('utf-8')
+        res.close()
+
         logging.debug('content-size:{0}'.format(len(content)))
-        self.feed( content ) 
+
+        # -> HTMLParser.feed
+        self.feed(content) 
 
     def handle_data(self, data):
         if not self.lasttag == 'p':
@@ -107,7 +117,7 @@ class Crawler(HTMLParser):
                     'text': text,
                     'link': link
                 }
-                #self.monitor_set_id(link_id, self.results[link_id]) 
+                self.monitor_set_id(link_id, self.results[link_id]) 
 
     def std_out_result(self):
         """
